@@ -1,5 +1,7 @@
 # Tuya Power Meter
 
+[🇷🇺 Русская документация](README.ru.md)
+
 A Go CLI application that connects to the [Tuya OpenAPI](https://openapi.tuyaeu.com), authenticates using your Client ID & Client Secret, fetches device data, and displays it as a structured table in the terminal.
 
 ## Features
@@ -94,4 +96,53 @@ go build -o tuya-meter .
 | `GET /v1.0/token?grant_type=1` | Obtain access token |
 | `GET /v1.0/iot-03/devices` | List all project devices |
 | `GET /v1.0/devices/{id}` | Get single device info |
-| `GET /v1.0/devices/{id}/status` | Get device DPS status |
+| `GET /v2.0/cloud/thing/{id}/shadow/properties` | Get live device DPS values |
+| `GET /v2.0/cloud/thing/{id}/model` | Get property specs (scale/unit) |
+
+---
+
+## Home Assistant Integration
+
+A full Home Assistant custom component is included in `custom_components/tuya_power_meter/`.
+
+### Features
+
+- ✅ Setup via UI (**Settings → Integrations → Add Integration → Tuya Power Meter**)
+- ✅ Sensors with correct `device_class` (power, voltage, current, energy, temperature)
+- ✅ Scaled values with units (e.g. `286.6 W`, `236.1 V`, `1.569 A`)
+- ✅ Configurable poll interval (default 30 s)
+- ✅ Auto token refresh
+- ✅ All devices grouped under their own device entry in HA
+
+### Installation
+
+**Option A — HACS Custom Repository** _(recommended)_
+1. In HACS → Custom Repositories → add this repo URL → category **Integration**
+2. Install "Tuya Power Meter" → restart HA
+
+**Option B — Manual**
+```bash
+# From the repo root:
+cp -r custom_components/tuya_power_meter  /config/custom_components/
+# Restart Home Assistant
+```
+
+### Configuration
+
+1. Go to **Settings → Integrations → + Add Integration**
+2. Search for **Tuya Power Meter**
+3. Enter your **Access ID** and **Access Secret**
+4. Enter your **Device IDs** (comma-separated, e.g. `bf52363ad6fdd994694spp,bf67807215b610d682sdis`)
+5. Choose a **poll interval** (10–3600 s, default 30 s)
+
+### Resulting Entities (example)
+
+| Entity | Value | Unit | Device class |
+|---|---|---|---|
+| `sensor.single_digital_meter_cur_power1` | 286.6 | W | power |
+| `sensor.single_digital_meter_cur_voltage1` | 236.1 | V | voltage |
+| `sensor.single_digital_meter_cur_current1` | 1.569 | A | current |
+| `sensor.single_digital_meter_total_energy1` | 18997.041 | kWh | energy |
+| `sensor.ac_charging_pile_devicekw` | 6.2 | kW | power |
+| `sensor.ac_charging_pile_a_voltage` | 212 | V | voltage |
+| `sensor.ac_charging_pile_devicetemp` | 33.1 | °C | temperature |

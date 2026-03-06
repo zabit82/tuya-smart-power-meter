@@ -1,0 +1,43 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Tuya OpenAPI Credentials",
+                "description": "Enter your Tuya cloud project Access ID and Access Secret. Find them at https://iot.tuya.com → your cloud project → Overview.",
+                "data": {
+                    "client_id": "Access ID (Client ID)",
+                    "client_secret": "Access Secret (Client Secret)",
+                    "api_host": "API Host"
+                }
+            },
+            "devices": {
+                "title": "Devices",
+                "description": "Enter comma-separated Device IDs. Find them in the Tuya app or developer console.",
+                "data": {
+                    "device_ids": "Device IDs (comma-separated)",
+                    "poll_interval": "Poll interval (seconds)"
+                }
+            }
+        },
+        "error": {
+            "invalid_auth": "Invalid credentials — check your Access ID and Access Secret.",
+            "cannot_connect": "Cannot connect to the Tuya API. Check your internet connection and API host.",
+            "unknown": "Unexpected error. Check the Home Assistant logs.",
+            "device_ids_required": "Please enter at least one Device ID."
+        },
+        "abort": {
+            "already_configured": "This integration is already configured."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Update Settings",
+                "data": {
+                    "device_ids": "Device IDs (comma-separated)",
+                    "poll_interval": "Poll interval (seconds)"
+                }
+            }
+        }
+    }
+}
