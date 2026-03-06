@@ -1,0 +1,10 @@
+{
+  "domain": "tuya_power_meter",
+  "name": "Tuya Power Meter",
+  "version": "1.0.0",
+  "dependencies": [],
+  "requirements": [],
+  "codeowners": [],
+  "iot_class": "cloud_polling",
+  "config_flow": true
+}
