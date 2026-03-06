@@ -49,7 +49,7 @@ CODE_MAP = [
     {
         "patterns": ["energy_add", "add_ele"],
         "device_class": SensorDeviceClass.ENERGY,
-        "state_class": SensorStateClass.MEASUREMENT,
+        "state_class": SensorStateClass.TOTAL_INCREASING,
     },
     # Temperature
     {
