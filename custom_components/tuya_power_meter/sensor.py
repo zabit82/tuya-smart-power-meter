@@ -16,10 +16,35 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CODE_MAP, CONF_CLIENT_ID, DOMAIN
+from .const import (
+    BINARY_SENSOR_MAP,
+    CODE_MAP,
+    CODE_NAMES,
+    DEFAULT_DISABLED_CODES,
+    DOMAIN,
+    EXCLUDE_CODES,
+)
 from .coordinator import TuyaCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+
+# Canonical energy units for HA (the Tuya model often reports "kW·h"/"kW*h").
+_ENERGY_UNIT_MAP = {
+    "wh": "Wh",
+    "kwh": "kWh",
+    "mwh": "MWh",
+    "gwh": "GWh",
+    "j": "J",
+    "kj": "kJ",
+    "mj": "MJ",
+    "gj": "GJ",
+}
+
+# Canonical temperature units (Tuya reports the single-char "℃"/"℉").
+_TEMPERATURE_UNIT_MAP = {
+    "℃": "°C",
+    "℉": "°F",
+}
 
 
 async def async_setup_entry(
@@ -41,6 +66,9 @@ async def async_setup_entry(
         for prop in device_data.get("properties", []):
             code = prop.get("code", "")
             if not code:
+                continue
+            # Skip noise codes and codes that are exposed as binary sensors
+            if code in EXCLUDE_CODES or code in BINARY_SENSOR_MAP:
                 continue
 
             spec = specs.get(code, {})
@@ -67,6 +95,40 @@ def _resolve_device_class(
             if pattern.lower() in code.lower():
                 return entry["device_class"], entry["state_class"]
     return None, None
+
+
+def _entity_name(code: str, spec_name: str) -> str:
+    """Pick a clean, ASCII entity name.
+
+    Prefer a curated English name; fall back to the spec name only when it is
+    ASCII, otherwise use the raw DPS code so entity_ids stay valid/readable.
+    """
+    if code in CODE_NAMES:
+        return CODE_NAMES[code]
+    if spec_name and spec_name.isascii():
+        return spec_name
+    return code
+
+
+def _normalize_unit(
+    unit: str, device_class: SensorDeviceClass | None
+) -> str | None:
+    """Normalize model units to HA's canonical forms (energy & temperature)."""
+    if not unit:
+        return None
+    u = unit.strip()
+    if device_class == SensorDeviceClass.ENERGY:
+        compact = (
+            u.lower()
+            .replace("·", "")
+            .replace("•", "")
+            .replace("*", "")
+            .replace(" ", "")
+        )
+        return _ENERGY_UNIT_MAP.get(compact, u)
+    if device_class == SensorDeviceClass.TEMPERATURE:
+        return _TEMPERATURE_UNIT_MAP.get(u, u)
+    return u
 
 
 def _apply_scale(value: Any, scale: float, prop_type: str) -> Any:
@@ -109,18 +171,21 @@ class TuyaSensorEntity(CoordinatorEntity, SensorEntity):
         # Entity identification
         self._attr_unique_id = f"{device_id}_{code}"
 
-        # Human-readable name — use spec name if available, else code
-        spec_name = spec.get("name", "")
-        self._attr_name = spec_name if spec_name else code
-
-        # Unit of measurement from model spec
-        unit = spec.get("unit", "")
-        self._attr_native_unit_of_measurement = unit if unit else None
+        # Human-readable name (ASCII, so entity_id stays clean)
+        self._attr_name = _entity_name(code, spec.get("name", ""))
 
         # device_class and state_class by code pattern
         device_class, state_class = _resolve_device_class(code)
         self._attr_device_class = device_class
         self._attr_state_class = state_class
+
+        # Unit of measurement from model spec, normalized for HA
+        unit = _normalize_unit(spec.get("unit", ""), device_class)
+        self._attr_native_unit_of_measurement = unit
+
+        # Hide control/setup parameters by default — enable them manually
+        if code in DEFAULT_DISABLED_CODES:
+            self._attr_entity_registry_enabled_default = False
 
         # Device grouping in HA device registry
         device_name = device_info_raw.get("name", device_id)
