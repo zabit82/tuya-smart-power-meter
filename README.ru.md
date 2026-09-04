@@ -113,6 +113,9 @@ go build -o tuya-meter .
 - ✅ Масштабированные значения с единицами (например, `286.6 W`, `236.1 V`, `1.569 A`)
 - ✅ Настраиваемый интервал опроса (по умолчанию 30 с)
 - ✅ Автоматическое обновление токена
+- ✅ Binary-сенсоры для булевых/статусных DPS (выключатель, ошибка, онлайн, RFID)
+- ✅ Шумовые/управляющие DPS отфильтрованы (сырые алармы, команды записи; настройки скрыты по умолчанию)
+- ✅ Энерго-сенсоры готовы к дашборду HA **Energy** (`state_class: total_increasing`)
 - ✅ Каждое устройство группируется в отдельную карточку устройства в HA
 
 ### Установка
@@ -136,14 +139,22 @@ cp -r custom_components/tuya_power_meter /config/custom_components/
 4. Ввести **Device IDs** через запятую (например, `bf52363ad6fdd994694spp,bf67807215b610d682sdis`)
 5. Выбрать **интервал опроса** (10–3600 с, по умолчанию 30 с)
 
-### Создаваемые сущности (пример)
+### Создаваемые сущности (пример — «AC charging pile»)
 
 | Сущность | Значение | Единица | Device class |
 |---|---|---|---|
-| `sensor.single_digital_meter_cur_power1` | 286.6 | W | power |
-| `sensor.single_digital_meter_cur_voltage1` | 236.1 | V | voltage |
-| `sensor.single_digital_meter_cur_current1` | 1.569 | A | current |
-| `sensor.single_digital_meter_total_energy1` | 18997.041 | kWh | energy |
-| `sensor.ac_charging_pile_devicekw` | 6.2 | kW | power |
-| `sensor.ac_charging_pile_a_voltage` | 212 | V | voltage |
-| `sensor.ac_charging_pile_devicetemp` | 33.1 | °C | temperature |
+| `sensor.ac_charging_pile_total_energy` | 18.5 | kWh | energy (total_increasing) |
+| `sensor.ac_charging_pile_power` | 6.1 | kW | power |
+| `sensor.ac_charging_pile_phase_a_voltage` | 209 | V | voltage |
+| `sensor.ac_charging_pile_phase_a_current` | 29.0 | A | current |
+| `sensor.ac_charging_pile_temperature` | 34.3 | °C | temperature |
+| `sensor.ac_charging_pile_charge_energy_session` | 0.01 | kWh | energy (measurement) |
+| `sensor.ac_charging_pile_remaining_energy` | 0.0 | kWh | energy (measurement) |
+| `binary_sensor.ac_charging_pile_charging_switch` | on/off | — | — |
+| `binary_sensor.ac_charging_pile_fault` | on/off | — | problem |
+| `binary_sensor.ac_charging_pile_online_state` | on/off | — | connectivity |
+
+> **Учёт энергии:** используйте `sensor.ac_charging_pile_total_energy` (накопительный счётчик) как
+> источник потребления в **Настройки → Панели → Energy**, при необходимости обернув его в
+> `utility_meter` для дневных/месячных/годовых сумм. Прочие счётчики (например,
+> `single_digital_meter_total_energy1`) маппятся тем же способом через `CODE_MAP`.
